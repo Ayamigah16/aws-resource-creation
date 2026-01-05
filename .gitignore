@@ -1,0 +1,46 @@
+# Output directories (contains generated files from scripts)
+outputs/logs/
+outputs/keys/
+outputs/info/
+outputs/samples/
+
+# AWS Key Pairs (NEVER commit private keys!)
+*.pem
+
+# Generated information files (legacy - files now go in outputs/)
+ec2_instance_info.txt
+security_group_info.txt
+s3_bucket_info.txt
+welcome.txt
+sample_file.txt
+
+# AWS credentials (if accidentally created)
+.aws/
+credentials
+config
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Screenshots (if you want to manage them separately)
+# screenshots/
