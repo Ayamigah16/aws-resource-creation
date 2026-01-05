@@ -3,7 +3,7 @@ outputs/logs/
 outputs/keys/
 outputs/info/
 outputs/samples/
-
+outputs
 # AWS Key Pairs (NEVER commit private keys!)
 *.pem
 
