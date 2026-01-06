@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 
 # Configuration variables
 PROJECT_TAG="aws-resource-creation"
-REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+REGION="${AWS_DEFAULT_REGION:-eu-west-1}"
 DRY_RUN=false
 
 # Output directories
@@ -515,5 +515,8 @@ main() {
     echo -e "Log file: ${GREEN}${LOG_FILE}${NC}"
     echo ""
 }
+
+# Execute main function
+main "$@"
 
 

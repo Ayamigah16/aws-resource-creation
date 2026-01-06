@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 # Configuration variables
 BUCKET_PREFIX="automation-lab-bucket"
 TIMESTAMP=$(date +%s)
-REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+REGION="${AWS_DEFAULT_REGION:-eu-west-1}"
 PROJECT_TAG="aws-resource-creation"
 
 # Output directories
@@ -275,7 +275,7 @@ EOF
 upload_file() {
     local bucket_name="$1"
     local file="$2"
-    local key="${3:-${file}}"
+    local key="${3:-$(basename "${file}")}"
     
     log_info "Uploading ${file} to S3 bucket..."
     
@@ -292,10 +292,11 @@ upload_file() {
 upload_file_with_metadata() {
     local bucket_name="$1"
     local file="$2"
+    local filename=$(basename "${file}")
     
     log_info "Uploading file with metadata..."
     
-    if aws s3 cp "${file}" "s3://${bucket_name}/metadata-${file}" \
+    if aws s3 cp "${file}" "s3://${bucket_name}/metadata-${filename}" \
         --metadata "project=${PROJECT_TAG},uploadedby=automation-script,timestamp=${TIMESTAMP}" \
         --region "${REGION}" &>> "${LOG_FILE}"; then
         log_success "File with metadata uploaded"
