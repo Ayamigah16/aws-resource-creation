@@ -1,653 +1,471 @@
-# AWS Resource Creation Automation Project
+# AWS Resource Automation with Bash
 
-![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
-![Shell Script](https://img.shields.io/badge/shell_script-%23121011.svg?style=for-the-badge&logo=gnu-bash&logoColor=white)
-![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+A comprehensive Bash-based automation framework for provisioning and managing AWS resources (EC2, S3, Security Groups) with state management and logging capabilities.
 
-## 📋 Project Overview
+## Project Overview
 
+This project provides production-ready scripts to automate AWS resource creation, configuration, and cleanup. All resources are tracked in a remote S3-based state file, enabling infrastructure-as-code practices and preventing drift.
 
-**Project Goal:** Develop Bash scripts that automate the creation and configuration of essential AWS resources programmatically, applying best practices for parameterization, error handling, and resource cleanup.
+## Scripts
 
-## 🎯 Learning Objectives
+### 1. **create_ec2.sh**
+**Purpose**: Automate EC2 instance creation with security group and key pair management.
 
-- ✅ Use the AWS CLI to create and manage cloud resources programmatically
-- ✅ Write and execute Bash scripts to automate routine infrastructure setup tasks
-- ✅ Apply best practices for parameterization, error handling, and resource cleanup
-- ✅ Demonstrate security principles through proper IAM credentials and permissions
-- ✅ Implement tagging strategies for resource management
+**Features**:
+- Dynamic AMI resolution (latest Amazon Linux 2)
+- Automatic security group creation with SSH access configuration
+- Key pair generation and management
+- State tracking of all resources
+- Dry-run mode with detailed resource preview
+- SSH CIDR block customization via environment variable or interactive prompt
 
-## 🗂️ Project Structure
-
-```
-aws-resource-creation/
-├── scripts/
-│   ├── create_ec2.sh              # EC2 instance creation automation
-│   ├── create_security_group.sh   # Security group creation automation
-│   ├── create_s3_bucket.sh         # S3 bucket creation automation
-│   ├── cleanup_resources.sh        # Resource cleanup automation
-│   ├── setup.sh                    # Setup verification script
-│   ├── project_info.sh             # Project information display
-│   └── README.md                   # This file
-├── outputs/                        # Generated files (git-ignored)
-│   ├── logs/                       # Timestamped execution logs
-│   ├── keys/                       # SSH private keys (.pem files)
-│   ├── info/                       # Resource information files
-│   ├── samples/                    # Sample files for S3 uploads
-│   └── README.md                   # Outputs documentation
-├── .gitignore                      # Git exclusions (keys, logs, etc.)
-└── README.md                       # Main project documentation
-```
-
-## 📁 Output Files Organization
-
-All generated files are automatically organized in the `outputs/` directory:
-
-- **logs/**: Timestamped log files (`*_creation_YYYYMMDD_HHMMSS.log`)
-- **keys/**: SSH private keys (`automation-lab-key-*.pem`) - **Never committed to git!**
-- **info/**: Resource details (`ec2_instance_info.txt`, `security_group_info.txt`, etc.)
-- **samples/**: Sample files for testing (`welcome.txt`)
-
-See `outputs/README.md` for detailed information about output file management.
-
-## 🚀 Scripts Overview
-
-### 1. create_ec2.sh
-**Purpose:** Automates the creation of EC2 instances with key pairs and proper tagging.
-
-**Features:**
-- ✅ Creates EC2 key pair automatically
-- ✅ Fetches latest Amazon Linux 2 AMI
-- ✅ Launches t2.micro instance (free-tier eligible)
-- ✅ Tags instance with 'Project=AutomationLab'
-- ✅ Outputs instance ID, public IP, and SSH connection command
-- ✅ Saves key pair to local .pem file with correct permissions
-- ✅ Generates detailed instance information file
-
-**Usage:**
+**Usage**:
 ```bash
-chmod +x create_ec2.sh
+# Interactive mode (prompts for SSH CIDR)
 ./create_ec2.sh
+
+# With environment variable (skip prompt)
+SSH_CIDR="203.0.113.0/24" ./create_ec2.sh
+
+# Dry-run mode
+./create_ec2.sh --dry-run
+
+# Customize instance type and region
+INSTANCE_TYPE="t3.small" AWS_REGION="us-west-2" ./create_ec2.sh
 ```
 
-**Output Example:**
-```
-Instance ID:     i-0123456789abcdef0
-Public IP:       54.123.45.67
-Key File:        automation-lab-key-1234567890.pem
-SSH Command:     ssh -i automation-lab-key-1234567890.pem ec2-user@54.123.45.67
-```
+**Output**: Instance ID, public/private IPs, SSH command, and key pair name.
 
 ---
 
-### 2. create_security_group.sh
-**Purpose:** Automates the creation of security groups with predefined ingress rules.
+### 2. **create_s3_bucket.sh**
+**Purpose**: Create and configure S3 buckets with versioning and tagging.
 
-**Features:**
-- ✅ Creates security group in default VPC
-- ✅ Opens port 22 (SSH) for remote access
-- ✅ Opens port 80 (HTTP) for web traffic
-- ✅ Opens port 443 (HTTPS) for secure web traffic
-- ✅ Tags security group with 'Project=AutomationLab'
-- ✅ Displays security group ID and all configured rules
-- ✅ Generates security group information file
+**Features**:
+- Automatic unique bucket naming with timestamp and username
+- Versioning enabled by default
+- Automatic tagging (Project: AutomationLab, Environment: Development)
+- Sample welcome file upload
+- State tracking
+- Dry-run mode
 
-**Usage:**
+**Usage**:
 ```bash
-chmod +x create_security_group.sh
-./create_security_group.sh
-```
-
-**Output Example:**
-```
-Security Group ID:   sg-0123456789abcdef0
-Security Group Name: devops-sg-1234567890
-
-Inbound Rules:
-  ✓ Protocol: tcp | Port: 22  | Source: 0.0.0.0/0 | Service: SSH
-  ✓ Protocol: tcp | Port: 80  | Source: 0.0.0.0/0 | Service: HTTP
-  ✓ Protocol: tcp | Port: 443 | Source: 0.0.0.0/0 | Service: HTTPS
-```
-
----
-
-### 3. create_s3_bucket.sh
-**Purpose:** Automates S3 bucket creation with versioning, encryption, and sample file upload.
-
-**Features:**
-- ✅ Creates uniquely named S3 bucket (account-specific naming)
-- ✅ Enables bucket versioning
-- ✅ Enables server-side encryption (AES256)
-- ✅ Blocks public access (security best practice)
-- ✅ Tags bucket with 'Project=AutomationLab'
-- ✅ Uploads sample welcome.txt file
-- ✅ Adds custom metadata to uploaded files
-- ✅ Generates bucket information file with useful commands
-
-**Usage:**
-```bash
-chmod +x create_s3_bucket.sh
+# Create S3 bucket
 ./create_s3_bucket.sh
+
+# Dry-run mode
+./create_s3_bucket.sh --dry-run
+
+# Custom region
+AWS_REGION="eu-west-1" ./create_s3_bucket.sh
 ```
 
-**Output Example:**
-```
-Bucket Name:        automation-lab-bucket-123456789012-1234567890
-Region:             us-east-1
-Versioning Status:  Enabled
-Encryption:         Enabled (AES256)
-Public Access:      Blocked
-
-Bucket Contents:
-  ✓ 2025-12-23 10:30:45        156 welcome.txt
-  ✓ 2025-12-23 10:30:46        156 metadata-welcome.txt
-```
+**Output**: Bucket name saved to `s3_bucket_name.txt`, tracked in state.
 
 ---
 
-### 4. cleanup_resources.sh
-**Purpose:** Safely terminates and deletes all resources created by the automation scripts.
+### 3. **create_security_group.sh**
+**Purpose**: Create and configure security groups with custom ingress rules.
 
-**Features:**
-- ✅ Identifies resources by Project tag
-- ✅ Terminates EC2 instances
-- ✅ Deletes key pairs (AWS and local .pem files)
-- ✅ Deletes security groups
-- ✅ Empties and deletes S3 buckets (including versioned objects)
-- ✅ Cleans up local information files
-- ✅ Supports dry-run mode for safe testing
-- ✅ Requires confirmation before deletion
+**Features**:
+- Create named security groups
+- Configure SSH (port 22) and HTTP (port 80) with custom CIDR ranges
+- Interactive CIDR prompts with format examples
+- State tracking
+- Dry-run mode with rule preview
 
-**Usage:**
+**Usage**:
 ```bash
-chmod +x cleanup_resources.sh
+# Interactive mode (prompts for SSH and HTTP CIDR)
+./create_security_group.sh
 
-# Dry run (preview what would be deleted)
+# With environment variables (skip prompts)
+SSH_CIDR="10.0.0.0/8" HTTP_CIDR="0.0.0.0/0" ./create_security_group.sh
+
+# Dry-run mode
+./create_security_group.sh --dry-run
+```
+
+**CIDR Examples**:
+- `0.0.0.0/0` - Allow from anywhere (not recommended for SSH)
+- `203.0.113.0/24` - Allow from specific subnet
+- `203.0.113.50/32` - Allow from single IP
+
+---
+
+### 4. **cleanup_resources.sh**
+**Purpose**: Safely delete all AWS resources tracked in state.
+
+**Features**:
+- Displays detailed resource information before deletion
+- Interactive confirmation prompt
+- Handles EC2 termination with wait logic
+- Properly handles versioned S3 buckets
+- Graceful error handling (idempotent - safe to run multiple times)
+- Dry-run mode to preview deletion
+
+**Usage**:
+```bash
+# Dry-run mode (preview what will be deleted)
 ./cleanup_resources.sh --dry-run
 
-# Actual cleanup (requires confirmation)
+# Delete all resources (requires confirmation)
 ./cleanup_resources.sh
-
-# Specify region
-./cleanup_resources.sh --region us-west-2
 ```
 
-**Safety Features:**
-- Requires explicit "yes" confirmation
-- Provides dry-run mode to preview deletions
-- Uses tag-based filtering to avoid accidental deletions
-- Handles versioned S3 objects properly
+**Deletion Order**:
+1. EC2 instances (with wait for full termination)
+2. Key pairs
+3. Security groups (after EC2 termination)
+4. S3 buckets (including all versioned objects)
 
 ---
 
-## 🛠️ Prerequisites
+### 5. **logger.sh**
+**Purpose**: Centralized logging utility used by all scripts.
 
-### 1. AWS Account
-- Active AWS account with appropriate permissions
-- IAM user with programmatic access
+**Features**:
+- Color-coded log levels (DEBUG, DRYRUN, INFO, WARN, ERROR)
+- Console and file output
+- Configurable log levels
 
-### 2. Required IAM Permissions
-Your IAM user needs the following permissions:
+**Log Levels**:
+- `DEBUG` (blue) - Detailed debug information
+- `DRYRUN` (magenta) - Dry-run mode messages
+- `INFO` (white) - General information
+- `WARN` (yellow) - Warnings
+- `ERROR` (red) - Errors
+
+**Usage**:
+```bash
+source ./logger.sh
+
+log_info "Creating resource..."
+log_warn "This is a warning"
+log_error "An error occurred"
+log_dryrun "Dry-run preview"
+```
+
+---
+
+### 6. **state/state_manager.sh**
+**Purpose**: Manage remote state storage in S3 and local state synchronization.
+
+**Features**:
+- S3-based state backend (automatic bucket creation)
+- **Persistent state bucket name** stored in `.state_bucket_name` file
+- Local state file synchronization (`./state.json`)
+- CRUD operations for resource tracking
+- Automatic state push/pull
+- Helper functions for resource management
+
+**State Bucket Resolution**:
+The state manager uses the following priority to determine the S3 state bucket name:
+1. `STATE_BUCKET` environment variable (if set)
+2. `.state_bucket_name` file (if exists) - persists bucket name across runs
+3. Generate new bucket name with date format (`aws-project-state-YYYYMMDD-PID`) and save to file
+
+This ensures consistent state tracking across multiple script executions.
+
+**Generated Files**:
+| File | Purpose |
+|------|---------|
+| `.state_bucket_name` | Stores the S3 state bucket name (persists across runs) |
+| `state.json` | Local copy of the remote state |
+| `s3_bucket_name.txt` | Last created S3 bucket name |
+
+**State Structure**:
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:*",
-        "s3:*",
-        "sts:GetCallerIdentity"
-      ],
-      "Resource": "*"
-    }
-  ]
+  "project": "aws-project",
+  "region": "eu-central-1",
+  "resources": {
+    "ec2": { "instance-id": {...} },
+    "security_group": { "sg-id": {...} },
+    "keypair": { "key-name": {...} },
+    "s3": { "bucket-name": {...} }
+  }
 }
 ```
 
-### 3. Software Requirements
-- **Operating System:** Linux, macOS, or WSL2 on Windows
-- **Bash:** Version 4.0 or higher
-- **AWS CLI:** Version 2.x (recommended)
+---
+
+## Setup and Execution
+
+### Prerequisites
+
+1. **AWS CLI** - Installed and configured with credentials
+   ```bash
+   aws --version
+   aws sts get-caller-identity  # Verify credentials
+   ```
+
+2. **jq** - JSON query tool
+   ```bash
+   sudo apt-get install jq  # Ubuntu/Debian
+   brew install jq          # macOS
+   ```
+
+3. **Bash 4.0+**
+   ```bash
+   bash --version
+   ```
+
+### Initial Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd Automate_AWS_Resource_Creation_with_Bash
+   ```
+
+2. **Set executable permissions**:
+   ```bash
+   chmod +x *.sh state/*.sh
+   ```
+
+3. **Configure AWS credentials** (if not already done):
+   ```bash
+   aws configure
+   ```
+
+4. **Optional: Set environment variables**:
+   ```bash
+   export AWS_REGION="eu-central-1"
+   export STATE_BUCKET="my-custom-state-bucket"
+   export LOG_LEVEL="INFO"
+   ```
+
+### Typical Workflow
+
+```bash
+# 1. Create a security group with custom rules
+./create_security_group.sh
+
+# 2. Create an EC2 instance
+./create_ec2.sh
+
+# 3. Create an S3 bucket
+./create_s3_bucket.sh
+
+# 4. View state
+cat state.json
+
+# 5. Test cleanup with dry-run
+./cleanup_resources.sh --dry-run
+
+# 6. Clean up all resources
+./cleanup_resources.sh
+```
 
 ---
 
-## 📦 Installation & Setup
+**Screenshots**
 
-### Step 1: Install AWS CLI
+- **Create EC2 — Dry-run:** ![Create EC2 Dry-run](screenshots/create_ec2_dryrun.png)
+  - **Create EC2 — Real:** ![Create EC2 Real-run](screenshots/create_ec2_real.png)
 
-**On Linux:**
+- **Create S3 Bucket — Dry-run:** ![Create S3 Dry-run](screenshots/create_s3_bucket_dryrun.png)
+  - **Create S3 Bucket — Real:** ![Create S3 Real-run](screenshots/create_s3_bucket_real.png)
+
+- **Create Security Group — Dry-run:** ![Create SG Dry-run](screenshots/create_security_group_dryrun.png)
+  - **Create Security Group — Real:** ![Create SG Real-run](screenshots/create_security_group_real.png)
+
+- **Cleanup Resources — Dry-run:** ![Cleanup Dry-run](screenshots/cleanup_resources_dryrun.png)
+  - **Cleanup Resources — Real:** ![Cleanup Real-run](screenshots/cleanup_resources_real.png)
+
+Run the capture and image-generation helpers to produce these files locally:
+
 ```bash
+./capture_outputs.sh      # dry-run mode creates *_dryrun.txt outputs
+./capture_outputs.sh real # real mode (prompts; creates *_real.txt outputs)
+./generate_images.sh      # converts .txt outputs to PNG images in screenshots/
+```
+
+
+## Challenges Faced & Resolutions
+
+### Challenge 1: AWS CLI Output Interference
+**Problem**: AWS CLI commands were outputting JSON to stdout, causing jq parsing errors and state file corruption.
+
+**Resolution**: Added proper output redirection (`>/dev/null 2>&1`) to all AWS CLI commands to suppress both stdout and stderr. This ensures clean state file creation and manipulation.
+
+### Challenge 2: State File Path Accessibility
+**Problem**: Initial `/tmp/state.json` path was not accessible in the WSL environment, causing "No such file or directory" errors.
+
+**Resolution**: Changed state file location to `./state.json` (current working directory) for better accessibility and portability across environments.
+
+### Challenge 3: jq Variable Escaping in State Deletion
+**Problem**: Resource IDs like `i-0d0e34163e1cfdccb` were causing jq syntax errors when used directly in filter strings due to lack of proper escaping.
+
+**Original Code**:
+```bash
+jq "del(.resources[$resource][$id])" "$STATE_LOCAL"
+```
+
+**Resolution**: Used jq's `--arg` flags for proper variable substitution:
+```bash
+jq --arg r "$resource" --arg id "$id" 'del(.resources[$r][$id])' "$STATE_LOCAL"
+```
+
+### Challenge 4: EC2 SSH Access Issues
+**Problem**: Created EC2 instances had no SSH ingress rules, making them inaccessible.
+
+**Resolution**: 
+- Added automatic SSH rule creation via `authorize-security-group-ingress`
+- Made CIDR block customizable via environment variable or interactive prompt
+- Provided format examples for flexibility
+
+### Challenge 5: Security Group Deletion Dependencies
+**Problem**: Security group deletion failed because EC2 instances were still shutting down and ENIs (network interfaces) were still attached.
+
+**Resolution**: Added `aws ec2 wait instance-terminated` after EC2 termination to ensure full cleanup before attempting security group deletion.
+
+### Challenge 6: Idempotency in Cleanup
+**Problem**: Running cleanup multiple times would fail on already-deleted resources, corrupting state if deletion succeeded but state update failed.
+
+**Resolution**: 
+- Implemented error checking before state updates
+- Only remove resources from state if AWS deletion succeeds
+- Added graceful handling for "InvalidGroup.NotFound" errors
+- Made cleanup script safe to run multiple times
+
+### Challenge 7: S3 Versioned Bucket Deletion
+**Problem**: S3 bucket deletion failed silently because versioned objects and delete markers weren't being removed.
+
+**Resolution**: Implemented multi-step deletion:
+1. List and delete all object versions
+2. Delete all delete markers
+3. Delete the bucket only after all versions are removed
+
+### Challenge 8: Logger Integration
+**Problem**: Each script had duplicate logging code, violating DRY principles.
+
+**Resolution**: Centralized logging in `logger.sh` with color-coded output levels and file logging, sourced by all scripts.
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AWS_REGION` | `eu-central-1` | AWS region for resources |
+| `STATE_BUCKET` | `aws-project-state` | S3 bucket for state storage |
+| `STATE_KEY` | `state.json` | State file name |
+| `INSTANCE_TYPE` | `t3.micro` | EC2 instance type |
+| `TAG_PROJECT` | `AutomationLab` | Project tag value |
+| `SSH_CIDR` | (prompt) | SSH access CIDR block |
+| `HTTP_CIDR` | (prompt) | HTTP access CIDR block |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG/INFO/WARN/ERROR) |
+| `CONSOLE_LOG` | `true` | Output logs to console |
+
+---
+
+## State File Structure
+
+The state file (`state.json`) tracks all created resources:
+
+```json
+{
+  "project": "aws-project",
+  "region": "eu-central-1",
+  "resources": {
+    "ec2": {
+      "i-0123456789abcdef0": {
+        "name": "AutomationLabInstance",
+        "ami": "ami-05000e6b0662e03c0",
+        "instance_type": "t3.micro",
+        "security_group": "sg-0123456789abcdef0",
+        "keypair": "automation-lab-key-1768991159",
+        "created_at": "2026-01-21T10:26:07Z"
+      }
+    },
+    "security_group": {
+      "sg-0123456789abcdef0": {
+        "name": "devops-sg",
+        "created_at": "2026-01-21T10:25:52Z"
+      }
+    },
+    "keypair": {
+      "automation-lab-key-1768991159": {
+        "name": "automation-lab-key-1768991159",
+        "created_at": "2026-01-21T10:26:00Z"
+      }
+    },
+    "s3": {
+      "automation-lab-bucket-1768990598-sage": {
+        "bucket": "automation-lab-bucket-1768990598-sage",
+        "created_at": "2026-01-21T10:16:53Z"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Logging Output
+
+All scripts write to both console and `aws_project.log`:
+
+```
+[2026-01-21 10:16:38] [INFO] S3 Bucket Creation via State Manager
+[2026-01-21 10:16:45] [INFO] [1/5] Creating S3 bucket: automation-lab-bucket-1768990598-sage
+[2026-01-21 10:16:47] [INFO] ✓ Bucket created
+[2026-01-21 10:16:53] [INFO] Bucket name saved to s3_bucket_name.txt
+```
+
+---
+
+## Best Practices
+
+1. **Always run with `--dry-run` first** to preview changes:
+   ```bash
+   ./create_ec2.sh --dry-run
+   ```
+
+2. **Save sensitive information** - Keep generated key pairs secure:
+   ```bash
+   chmod 400 automation-lab-key-*.pem
+   ```
+
+3. **Monitor state file** - Check state.json before cleanup:
+   ```bash
+   cat state.json | jq .resources
+   ```
+
+4. **Use specific CIDR ranges** - Avoid `0.0.0.0/0` for SSH in production:
+   ```bash
+   SSH_CIDR="203.0.113.0/24" ./create_security_group.sh
+   ```
+
+5. **Regular state synchronization** - State stays in sync via S3, but you can manually sync:
+   ```bash
+   source ./state/state_manager.sh
+   state_pull
+   ```
+
+---
+
+## Troubleshooting
+
+### "AWS CLI required" error
+```bash
+# Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 ```
 
-**On macOS:**
-```bash
-brew install awscli
-```
-
-**Verify installation:**
-```bash
-aws --version
-```
-
-### Step 2: Configure AWS CLI
-
+### "AWS credentials missing" error
 ```bash
 aws configure
+# Enter your Access Key ID, Secret Access Key, Region, and Output Format
 ```
 
-Enter your credentials:
-```
-AWS Access Key ID [None]: YOUR_ACCESS_KEY
-AWS Secret Access Key [None]: YOUR_SECRET_KEY
-Default region name [None]: us-east-1
-Default output format [None]: json
-```
-
-### Step 3: Verify AWS Configuration
-
+### State file corruption
 ```bash
-# Check your identity
-aws sts get-caller-identity
-
-# List configuration
-aws configure list
-```
-
-Expected output:
-```json
-{
-    "UserId": "AIDAXXXXXXXXXXXXXXXXX",
-    "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/your-username"
-}
-```
-
-### Step 4: Clone or Download Scripts
-
-```bash
-git clone <repository-url>
-cd aws-resource-creation
-```
-
-### Step 5: Make Scripts Executable
-
-```bash
-chmod +x create_ec2.sh
-chmod +x create_security_group.sh
-chmod +x create_s3_bucket.sh
-chmod +x cleanup_resources.sh
-```
-
----
-
-## 🎮 Usage Guide
-
-### Quick Start - Complete Workflow
-
-```bash
-# 1. Create security group first (for use with EC2)
-./create_security_group.sh
-
-# 2. Create EC2 instance
-./create_ec2.sh
-
-# 3. Create S3 bucket
-./create_s3_bucket.sh
-
-# 4. Review created resources in AWS Console
-
-# 5. When done, cleanup everything
-./cleanup_resources.sh
-```
-
-### Individual Script Usage
-
-**Create EC2 Instance:**
-```bash
-./create_ec2.sh
-# Wait for completion, note the SSH command
-ssh -i automation-lab-key-*.pem ec2-user@<PUBLIC_IP>
-```
-
-**Create Security Group:**
-```bash
-./create_security_group.sh
-# Note the security group ID for use with EC2 instances
-```
-
-**Create S3 Bucket:**
-```bash
-./create_s3_bucket.sh
-# Bucket is created with versioning and encryption enabled
-aws s3 ls s3://automation-lab-bucket-*
-```
-
-**Cleanup All Resources:**
-```bash
-# Dry run first (recommended)
-./cleanup_resources.sh --dry-run
-
-# Actual cleanup
-./cleanup_resources.sh
-# Type 'yes' when prompted
-```
-
----
-
-## 🔐 Security Best Practices
-
-### 1. Key Management
-- ✅ Scripts automatically set correct permissions (400) on .pem files
-- ✅ Keep .pem files secure and never commit to version control
-- ✅ Delete key pairs when no longer needed
-
-### 2. Security Groups
-- ⚠️ Scripts use 0.0.0.0/0 for demonstration purposes
-- 🔒 **Production:** Restrict to specific IP ranges
-- 🔒 **Production:** Use VPN or bastion hosts for SSH access
-
-### 3. S3 Buckets
-- ✅ Scripts enable encryption by default (AES256)
-- ✅ Scripts block all public access
-- ✅ Scripts enable versioning for data protection
-
-### 4. IAM Credentials
-- 🔒 Never hardcode credentials in scripts
-- 🔒 Use AWS CLI configuration or IAM roles
-- 🔒 Rotate access keys regularly
-- 🔒 Use least-privilege principle
-
-### 5. Tagging Strategy
-- ✅ All resources tagged with 'Project=AutomationLab'
-- ✅ Enables easy identification and cleanup
-- ✅ Supports cost tracking and resource management
-
----
-
-## 📊 Generated Files
-
-Each script generates information files for reference:
-
-| File | Description |
-|------|-------------|
-| `ec2_instance_info.txt` | EC2 instance details, SSH command |
-| `security_group_info.txt` | Security group ID, rules |
-| `s3_bucket_info.txt` | Bucket name, region, useful commands |
-| `welcome.txt` | Sample file uploaded to S3 |
-| `*.pem` | EC2 key pair private key files |
-
----
-
-## 🐛 Troubleshooting
-
-### Issue: "AWS CLI not found"
-**Solution:**
-```bash
-# Check if AWS CLI is installed
-which aws
-
-# If not, install it (see Installation section)
-```
-
-### Issue: "Credentials not configured"
-**Solution:**
-```bash
-aws configure
-# Enter your AWS credentials
-```
-
-### Issue: "Permission denied" when running scripts
-**Solution:**
-```bash
-chmod +x *.sh
-```
-
-### Issue: "Default VPC not found"
-**Solution:**
-```bash
-# Create a default VPC
-aws ec2 create-default-vpc
-```
-
-### Issue: "Bucket name already exists"
-**Solution:**
-- S3 bucket names must be globally unique
-- Scripts use timestamp to ensure uniqueness
-- If issue persists, check for existing buckets:
-```bash
-aws s3 ls
-```
-
-### Issue: "Security group cannot be deleted"
-**Solution:**
-- Security groups cannot be deleted if attached to running instances
-- Terminate instances first:
-```bash
-./cleanup_resources.sh
-```
-
-### Issue: "Region not supported"
-**Solution:**
-```bash
-# Check available regions
-aws ec2 describe-regions --output table
-
-# Set different region
-export AWS_DEFAULT_REGION=us-west-2
-```
-
----
-
-## 💡 Challenges Faced & Solutions
-
-### Challenge 1: AMI Selection
-**Problem:** Different regions have different AMIs, hardcoding AMI IDs fails in other regions.
-
-**Solution:** Scripts dynamically fetch the latest Amazon Linux 2 AMI using `describe-images` with filters.
-
-```bash
-AMI_ID=$(aws ec2 describe-images \
-    --owners amazon \
-    --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" \
-              "Name=state,Values=available" \
-    --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
-    --output text)
-```
-
-### Challenge 2: S3 Bucket Naming
-**Problem:** S3 bucket names must be globally unique across all AWS accounts.
-
-**Solution:** Implemented naming strategy using account ID and timestamp:
-```bash
-BUCKET_NAME="${BUCKET_PREFIX}-${ACCOUNT_ID}-${TIMESTAMP}"
-```
-
-### Challenge 3: Region-Specific S3 Creation
-**Problem:** `us-east-1` requires different bucket creation syntax than other regions.
-
-**Solution:** Conditional logic based on region:
-```bash
-if [ "$REGION" == "us-east-1" ]; then
-    aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION"
-else
-    aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION" \
-        --create-bucket-configuration LocationConstraint="$REGION"
-fi
-```
-
-### Challenge 4: Versioned S3 Bucket Cleanup
-**Problem:** Simply deleting a bucket fails if it contains versioned objects.
-
-**Solution:** Implemented comprehensive cleanup that removes all versions and delete markers:
-```bash
-# Delete all object versions
-aws s3api delete-objects --bucket "$BUCKET" \
-    --delete "$(aws s3api list-object-versions --bucket "$BUCKET" \
-        --query '{Objects: Versions[].{Key: Key, VersionId: VersionId}}')"
-
-# Delete all delete markers
-aws s3api delete-objects --bucket "$BUCKET" \
-    --delete "$(aws s3api list-object-versions --bucket "$BUCKET" \
-        --query '{Objects: DeleteMarkers[].{Key: Key, VersionId: VersionId}}')"
-```
-
-### Challenge 5: Error Handling & User Feedback
-**Problem:** Users need clear feedback on script progress and errors.
-
-**Solution:** Implemented colored output, progress indicators, and comprehensive error messages:
-```bash
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; }
-print_info() { echo -e "${YELLOW}→ $1${NC}"; }
-```
-
----
-
-## 🎯 Advanced Features
-
-### 1. Environment Variables
-Scripts respect standard AWS environment variables:
-```bash
-export AWS_DEFAULT_REGION=us-west-2
-export AWS_PROFILE=dev-profile
-./create_ec2.sh
-```
-
-### 2. Dry Run Mode (cleanup script)
-```bash
-./cleanup_resources.sh --dry-run
-```
-
-### 3. Custom Tagging
-Modify the `PROJECT_TAG` variable in scripts for custom tagging:
-```bash
-PROJECT_TAG="MyProject"
-```
-
-### 4. Metadata and Object Tagging
-S3 script adds custom metadata to uploaded objects:
-```bash
-aws s3 cp file.txt s3://bucket/ \
-    --metadata "project=AutomationLab,timestamp=$(date +%s)"
-```
-
----
-
-## 📸 Screenshots
-
-> **Note:** Take screenshots showing:
-> 1. AWS CLI configuration verification (`aws sts get-caller-identity`)
-> 2. Successful execution of each script
-> 3. AWS Console showing created resources
-> 4. Successful cleanup execution
-
-### Recommended Screenshots:
-1. **Terminal output** of `create_ec2.sh` showing instance creation
-2. **AWS EC2 Console** showing the running instance with tags
-3. **Terminal output** of `create_security_group.sh` showing rules
-4. **AWS EC2 Console** showing the security group details
-5. **Terminal output** of `create_s3_bucket.sh` showing bucket creation
-6. **AWS S3 Console** showing the bucket with uploaded files
-7. **Terminal output** of `cleanup_resources.sh` showing resource deletion
-
----
-
-## 🔄 CI/CD Integration (Optional Enhancement)
-
-These scripts can be integrated into CI/CD pipelines:
-
-```yaml
-# Example GitHub Actions workflow
-name: AWS Infrastructure Deployment
-on: [push]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Deploy Infrastructure
-        run: |
-          chmod +x *.sh
-          ./create_security_group.sh
-          ./create_ec2.sh
-          ./create_s3_bucket.sh
-```
-
----
-
-## 📚 Additional Resources
-
-### AWS CLI Documentation
-- [AWS CLI Command Reference](https://docs.aws.amazon.com/cli/latest/reference/)
-- [EC2 CLI Commands](https://docs.aws.amazon.com/cli/latest/reference/ec2/)
-- [S3 CLI Commands](https://docs.aws.amazon.com/cli/latest/reference/s3/)
-
-### AWS Best Practices
-- [AWS Security Best Practices](https://aws.amazon.com/architecture/security-identity-compliance/)
-- [AWS Tagging Strategies](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html)
-- [EC2 Best Practices](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-best-practices.html)
-
-### Bash Scripting
-- [Advanced Bash-Scripting Guide](https://tldp.org/LDP/abs/html/)
-- [Bash Error Handling](https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Areas for improvement:
-- Additional AWS services (RDS, Lambda, etc.)
-- Enhanced error handling
-- Cost estimation features
-- Multi-region support
-- Infrastructure state management
-
----
-
-## 📝 License
-
-This project is created for educational purposes as part of the DevOps Automation Lab.
-
----
-
-## ✅ Submission Checklist
-
-- [x] All required scripts created and tested
-- [x] Scripts include comprehensive error handling
-- [x] Resources properly tagged for identification
-- [x] Cleanup script safely removes all resources
-- [x] README.md with complete documentation
-- [ ] Screenshots of successful execution
-- [ ] GitHub repository created
-- [ ] All files committed and pushed
-
----
-
-## 👤 Author
-
-**DevOps Automation Lab**  
-Date: December 23, 2025
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check the Troubleshooting section
-2. Review AWS CloudWatch logs
-3. Verify IAM permissions
-4. Check AWS service quotas
-
----
-
-**Happy Automating! 🚀**
+# Reset state from S3
+source ./state/state_manager.sh
+state_pull
